@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:comic/ui/comics/edit_comic_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'ui/screens.dart';
@@ -18,9 +17,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => AuthManager(),
          ),
-        ChangeNotifierProvider(create: (ctx) => ComicsManager(),
-         ),
-
+         ChangeNotifierProxyProvider<AuthManager, ComicsManager>(
+          create:(ctx) => ComicsManager(),
+          update: (ctx, authManager, comicsManager) {
+            comicsManager!.authToken = authManager.authToken;
+            return comicsManager;
+          }, 
+        ),
       ],
       child: Consumer<AuthManager>(
         builder:(ctx, authManager,child){

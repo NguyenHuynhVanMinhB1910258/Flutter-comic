@@ -1,3 +1,4 @@
+import 'package:comic/ui/screens.dart';
 import 'package:flutter/material.dart';
 
 import 'comics_grid.dart';
@@ -10,7 +11,14 @@ class ComicsOverviewScreen extends StatefulWidget{
   State<ComicsOverviewScreen> createState() => _ComicsOverviewScreenState();
 }
 class _ComicsOverviewScreenState extends State<ComicsOverviewScreen> {
-  var _showOnlyFavorite = false;
+  final _showOnlyFavorites = ValueNotifier<bool>(false);
+  late Future<void> _fetchComics;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchComics = context.read<ComicsManager>().fetchComics();
+  }
 
   @override
   Widget build(BuildContext context){
@@ -22,20 +30,32 @@ class _ComicsOverviewScreenState extends State<ComicsOverviewScreen> {
         ],
       ),
       drawer: const AppDrawer(),
-      body: ComicGrid(_showOnlyFavorite),
+      body: FutureBuilder(
+        future: _fetchComics,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: _showOnlyFavorites,
+              builder:(context, onlyFavorites, child) {
+                return ComicGrid(onlyFavorites);
+              }); 
+          }
+        return const Center(
+          child: CircularProgressIndicator(),
+        );  
+       },
+      ),
 
     );
   }
   Widget buildComicFilterMenu(){
     return PopupMenuButton(
-      onSelected:(FilterOptions selectedValue){
-        setState(() {
+       onSelected:(FilterOptions selectedValue){  
           if (selectedValue == FilterOptions.favorites){
-            _showOnlyFavorite=true;
+            _showOnlyFavorites.value=true;
           }else{
-            _showOnlyFavorite=false;
+            _showOnlyFavorites.value=false;
           }
-        });
       },
       icon: const Icon(
         Icons.more_vert,

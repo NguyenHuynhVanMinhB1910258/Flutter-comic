@@ -39,4 +39,21 @@ class Comic {
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'imageUrl': imageUrl,
+    };
+  }
+
+  static Comic fromJson(Map<String, dynamic> json) {
+    return Comic(
+      id: json['id'],
+      title: json['title'],
+      description: json['description'],
+      imageUrl: json['imageUrl'],
+    );
+  }
 }

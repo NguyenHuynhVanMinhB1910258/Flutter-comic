@@ -1,38 +1,24 @@
 import 'package:flutter/foundation.dart';
 import '../../models/comic.dart';
+import '../../models/auth_token.dart';
+import '../../services/comics_service.dart';
 
 class ComicsManager with ChangeNotifier {
-  final List<Comic> _comic = [ Comic(
-      id: 'p1',
-      title: 'Red Shirt',
-      description: 'A red shirt - it is pretty red!',
-      imageUrl:
-          'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
-      isFavorite: true,
-    ),
-    Comic(
-      id: 'p2',
-      title: 'Trousers',
-      description: 'A nice pair of trousers.',
-      imageUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Trousers%2C_dress_%28AM_1960.022-8%29.jpg/512px-Trousers%2C_dress_%28AM_1960.022-8%29.jpg',
-    ),
-    Comic(
-      id: 'p3',
-      title: 'Yellow Scarf',
-      description: 'Warm and cozy - exactly what you need for the winter.',
-      imageUrl:
-          'https://live.staticflickr.com/4043/4438260868_cc79b3369d_z.jpg',
-    ),
-    Comic(
-      id: 'p4',
-      title: 'A Pan',
-      description: 'Prepare any meal you want.',
-      imageUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Cast-Iron-Pan.jpg/1024px-Cast-Iron-Pan.jpg',
-      isFavorite: true,
-    ),
-    ];
+    List<Comic> _comic = [];
+
+  final ComicsService _comicsService;
+
+  ComicsManager([AuthToken? authToken])
+      : _comicsService = ComicsService(authToken);
+
+  set authToken(AuthToken? authToken) {
+    _comicsService.authToken = authToken;
+  }
+
+  Future<void> fetchComics([bool filterByUser = false]) async {
+    _comic = await _comicsService.fetchComics(filterByUser);
+    notifyListeners();
+  }   
     int get comicCount {
       return _comic.length;
     }
@@ -47,28 +33,36 @@ class ComicsManager with ChangeNotifier {
     Comic findById(String id) {
     return _comic.firstWhere((com) => com.id == id);  
     }  
-    void addComic(Comic comic){
-      _comic.add(
-        comic.copyWith(
-          id: 'p${DateTime.now().toIso8601String()}',
-        ),
-      );
+   Future<void> addComic(Comic comic)  async {
+    final newComic = await _comicsService.addComic(comic);
+    if (newComic != null) {
+      _comic.add(newComic);
       notifyListeners();
-    } 
-    void updateComic(Comic comic){
-      final index = _comic.indexWhere((comic) => comic.id==comic.id);
+    }
+   }
+   Future<void> updateComic(Comic comic) async{
+      final index = _comic.indexWhere((item) => item.id==comic.id);
       if (index >= 0 ){
         _comic[index] = comic;
+        if (await _comicsService.updateComic(comic)){
+           _comic[index] = comic;
         notifyListeners();
+        }    
       }
     }
     void toggleFavoriteStatus(Comic comic){
       final savedStatus = comic.isFavorite;
       comic.isFavorite = !savedStatus;
     }
-    void deleteComic(String id){
-      final index = _comic.indexWhere((comic) => comic.id==id);
+   Future <void> deleteComic(String id) async{
+      final index = _comic.indexWhere((item) => item.id==id);
+      Comic? existingComic = _comic[index];
       _comic.removeAt(index);
       notifyListeners();
+      if (!await _comicsService.deleteComic(id)){
+        _comic.insert(index, existingComic);
+        notifyListeners();
+      }
     }
+
 }

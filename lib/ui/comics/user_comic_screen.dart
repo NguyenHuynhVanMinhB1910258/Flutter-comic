@@ -8,6 +8,11 @@ class UserComicsScreen extends StatelessWidget{
   static const routeName = '/user-comics';
   const UserComicsScreen ({super.key});
 
+   Future<void> _refreshComics(BuildContext context) async {
+    await context.read<ComicsManager>().fetchComics(true);
+  }
+
+
   @override
   Widget build(BuildContext context){
     final comicsManager = ComicsManager();
@@ -19,10 +24,20 @@ class UserComicsScreen extends StatelessWidget{
       ],
       ),
     drawer: const AppDrawer(),
-    body: RefreshIndicator(
-      onRefresh: () async=> print('refresh Comics'),
-       child: buildUserProductListView(),
-    ),
+     body: FutureBuilder(
+        future: _refreshComics(context),
+        builder: (ctx, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: () => _refreshComics(context),
+            child: buildUserComicListView(),
+          );
+        },
+      ),
     );
   }
   Widget buildAddButton(BuildContext context){
@@ -35,15 +50,15 @@ class UserComicsScreen extends StatelessWidget{
       },
     );
   }
-  Widget buildUserProductListView() {
+  Widget buildUserComicListView() {
     return Consumer<ComicsManager>(
-      builder: (ctx, productsManager, child) {
+      builder: (ctx, comicsManager, child) {
         return ListView.builder(
-          itemCount: productsManager.comicCount,
+          itemCount: comicsManager.comicCount,
           itemBuilder: (ctx, i) => Column(
             children: [
               UserComicListTile(
-                productsManager.comic[i],
+                comicsManager.comic[i],
               ),
               const Divider(),
             ],
